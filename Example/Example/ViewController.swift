@@ -13,11 +13,12 @@ class ViewController: UIViewController {
     @IBOutlet private weak var animatedLabel: UIAnimatedLabel! {
         didSet {
             animatedLabel.decimalPoints = .zero
+            animatedLabel.countingMethod = .easeInOut
         }
     }
 
     @IBAction private func count(sender: Any? = nil) {
-        animatedLabel.count(from: 0, to: 100, duration: 10.0)
+        animatedLabel.countFromCurrent(to: 1000, duration: 10.0)
     }
 
     @IBAction private func stop(sender: Any? = nil) {
