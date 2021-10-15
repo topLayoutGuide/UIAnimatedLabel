@@ -31,11 +31,11 @@ public class UIAnimatedLabel: UILabel {
         static let easingRate = Float(3.0)
     }
 
-    public enum CountingMethod {
+    public enum Method {
         case easeInOut, easeIn, easeOut, linear
     }
 
-    public enum DecimalPoints {
+    public enum Format {
         case zero, one, two, all
 
         var format: String {
@@ -51,27 +51,30 @@ public class UIAnimatedLabel: UILabel {
     // MARK: - Private
 
     private var currentValue: Float {
-        if progress >= totalTime { return destinationValue }
-        return startingValue + (update(t: Float(progress / totalTime)) * (destinationValue - startingValue))
+        if progress >= duration { return to }
+        return from + (update(t: Float(progress / duration)) * (to - from))
     }
 
-    private var startingValue: Float = 0
-    private var destinationValue: Float = 0
+    private var from: Float = 0
+    private var to: Float = 0
     private var progress: TimeInterval = 0
-    private var lastUpdate: TimeInterval = 0
-    private var totalTime: TimeInterval = 0
-    private var timer: CADisplayLink?
+    private var lastUpdatedTime: TimeInterval = 0
+    private var duration: TimeInterval = 0
+    private var displayLink: CADisplayLink?
     private var completion: (() -> Void)?
 
     // MARK: - Public
 
-    public var decimalPoints: DecimalPoints = .zero
-    public var countingMethod: CountingMethod = .easeInOut
+    public var format: Format = .zero
+    public var method: Method = .easeInOut
 
     public func count(from: Float, to: Float, duration: TimeInterval = 10.0, _ completion: (() -> Void)? = nil) {
         self.completion = completion
-        startingValue = from
-        destinationValue = to
+        self.from = from
+        self.to = to
+        self.progress = 0.0
+        self.duration = duration
+        self.lastUpdatedTime = Date.timeIntervalSinceReferenceDate
         resetTimer()
 
         if duration == 0.0 {
@@ -80,9 +83,6 @@ public class UIAnimatedLabel: UILabel {
             return
         }
 
-        progress = 0.0
-        totalTime = duration
-        lastUpdate = Date.timeIntervalSinceReferenceDate
         addDisplayLink()
     }
 
@@ -92,21 +92,21 @@ public class UIAnimatedLabel: UILabel {
 
     public func stopAnimating() {
         resetTimer()
-        progress = totalTime
+        progress = duration
     }
 
 }
 
 private extension UIAnimatedLabel {
     private func resetTimer() {
-        timer?.invalidate()
-        timer = nil
+        displayLink?.invalidate()
+        displayLink = nil
     }
 
     private func addDisplayLink() {
-        timer = CADisplayLink(target: self, selector: #selector(self.updateValue(timer:)))
-        timer?.add(to: .main, forMode: .default)
-        timer?.add(to: .main, forMode: .tracking)
+        displayLink = CADisplayLink(target: self, selector: #selector(self.updateValue(timer:)))
+        displayLink?.add(to: .main, forMode: .default)
+        displayLink?.add(to: .main, forMode: .tracking)
     }
 
     private func update(t: Float) -> Float {
@@ -147,17 +147,16 @@ private extension UIAnimatedLabel {
 
     @objc private func updateValue(timer: Timer) {
         let now: TimeInterval = Date.timeIntervalSinceReferenceDate
-        progress += now - lastUpdate
-        lastUpdate = now
+        progress += now - lastUpdatedTime
+        lastUpdatedTime = now
 
-        if progress >= totalTime {
-            self.timer?.invalidate()
-            self.timer = nil
-            progress = totalTime
+        if progress >= duration {
+            resetTimer()
+            progress = duration
         }
 
         text = String(format: decimalPoints.format, currentValue)
 
-        if progress == totalTime { completion?() }
+        if progress == duration { completion?() }
     }
 }

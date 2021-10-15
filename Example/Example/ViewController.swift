@@ -12,8 +12,8 @@ class ViewController: UIViewController {
 
     @IBOutlet private weak var animatedLabel: UIAnimatedLabel! {
         didSet {
-            animatedLabel.decimalPoints = .zero
-            animatedLabel.countingMethod = .easeInOut
+            animatedLabel.format = .zero
+            animatedLabel.method = .easeInOut
         }
     }
 
